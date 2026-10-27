@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#E9ECF3">
+<title>Absensi Allir</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+  /* ================= KONFIGURASI =================
+     Tempel URL Web App Google Apps Script (berakhiran /exec).
+     Biarkan kosong untuk MODE DEMO (data hanya di HP, tidak ke Sheets). */
+  const API_URL = 'https://script.google.com/macros/s/AKfycbxftf_IRnzMq7gEtle9KXH2bytZ_Pa1UiJEON8CAdEK8GY2Gcn4Mp8EcHuGd8NmX5wE/exec';
+</script>
+<style>
+:root {
+  --bg: #E9ECF3;
+  --hi: #FFFFFF;
+  --lo: #C8D0E0;
+  --ink: #1E293B;
+  --ink-2: #556377;
+  --brand: #026BB5;
+  --brand-2: #019CDF;
+  --focus: #00CFCC;
+  --ok: #047857;   --ok-pip: #10B981;
+  --warn: #92400E; --warn-pip: #F59E0B;
+  --err: #B91C1C;  --err-pip: #EF4444;
+  --raise: -6px -6px 14px var(--hi), 6px 6px 14px var(--lo);
+  --raise-sm: -3px -3px 8px var(--hi), 3px 3px 8px var(--lo);
+  --well: inset 4px 4px 8px var(--lo), inset -4px -4px 8px var(--hi);
+  --well-sm: inset 2px 2px 5px var(--lo), inset -2px -2px 5px var(--hi);
+  --r-card: 24px;
+  --r-ctl: 9999px;
+  --r-sm: 12px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 400 15px/1.45 Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+}
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; }
+:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--focus) !important; }
+.shell {
+  max-width: 420px; margin: 0 auto; min-height: 100%;
+  padding: calc(env(safe-area-inset-top, 0px) + 16px) 18px calc(env(safe-area-inset-bottom, 0px) + 96px);
+  display: flex; flex-direction: column; gap: 18px;
+}
+.hidden { display: none !important; }
+.muted { color: var(--ink-2); }
+.small { font-size: 13px; line-height: 18px; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* Header */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.top img { height: 30px; display: block; }
+.top .who { font-size: 13px; color: var(--ink-2); margin-top: 2px; }
+.avatar {
+  width: 44px; height: 44px; border-radius: 50%; background: var(--bg); box-shadow: var(--raise-sm);
+  display: grid; place-items: center; font-weight: 600; color: var(--brand); position: relative;
+}
+.avatar .dot { position: absolute; right: 1px; bottom: 1px; width: 11px; height: 11px; border-radius: 50%; background: var(--warn-pip); border: 2px solid var(--bg); }
+
+.demo {
+  border-radius: var(--r-sm); padding: 10px 12px; font-size: 13px; line-height: 18px;
+  background: #FFF4DB; color: var(--warn); border-left: 3px solid var(--warn-pip);
+}
+
+/* Clock */
+.clock { text-align: center; padding: 6px 0 2px; }
+.clock .t { font-size: 44px; line-height: 50px; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.clock .d { color: var(--ink-2); font-size: 14px; }
+.clock .src { font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+.clock .src.warn { color: var(--warn); }
+
+/* Today well */
+.well { border-radius: 20px; box-shadow: var(--well); padding: 16px 18px; }
+.today { text-align: center; }
+.today .lbl { font-size: 12px; color: var(--ink-2); font-weight: 600; letter-spacing: 0.02em; }
+.today .val { font-size: 18px; font-weight: 600; margin-top: 4px; }
+.today .sub { font-size: 13px; color: var(--ink-2); margin-top: 4px; }
+
+/* Segmented */
+.seg { display: grid; grid-template-columns: 1fr 1fr; border-radius: var(--r-ctl); box-shadow: var(--well); padding: 5px; gap: 4px; }
+.seg button { border-radius: var(--r-ctl); padding: 11px 8px; font-weight: 600; color: var(--ink-2); font-size: 14px; }
+.seg button[aria-pressed="true"] { background: var(--bg); color: var(--ink); box-shadow: var(--raise-sm); }
+.seg.three { grid-template-columns: repeat(3, 1fr); }
+
+/* Chips */
+.chips { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.chip {
+  display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: var(--r-ctl);
+  font-size: 12px; font-weight: 600; box-shadow: var(--well-sm); color: var(--ink-2);
+}
+.chip i { width: 8px; height: 8px; border-radius: 50%; background: #94A3B8; }
+.chip.ok { color: var(--ok); } .chip.ok i { background: var(--ok-pip); }
+.chip.warn { color: var(--warn); } .chip.warn i { background: var(--warn-pip); }
+.chip.err { color: var(--err); } .chip.err i { background: var(--err-pip); }
+.hint { text-align: center; font-size: 13px; color: var(--ink-2); margin-top: -6px; }
+
+/* Buttons */
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+  min-height: 54px; border-radius: var(--r-ctl); font-weight: 600; font-size: 16px;
+  background: var(--bg); box-shadow: var(--raise); transition: box-shadow .12s, transform .12s;
+}
+.btn:active:not(:disabled) { box-shadow: var(--well); transform: scale(0.99); }
+.btn.primary { background: var(--brand); color: #fff; box-shadow: -5px -5px 12px var(--hi), 5px 5px 12px #B4C0D6; }
+.btn.primary:active:not(:disabled) { box-shadow: inset 3px 3px 7px #01528C, inset -3px -3px 7px #0484D6; }
+.btn:disabled { box-shadow: none; opacity: .5; cursor: not-allowed; }
+.btn.danger { color: var(--err); }
+.btn.sm { min-height: 44px; font-size: 14px; }
+.btn svg { width: 20px; height: 20px; flex: none; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.spin { width: 18px; height: 18px; border: 2.5px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: sp .7s linear infinite; }
+@keyframes sp { to { transform: rotate(360deg); } }
+
+/* Cards & lists */
+.card { border-radius: var(--r-card); background: var(--bg); box-shadow: var(--raise); padding: 18px; }
+.sec-title { font-size: 16px; font-weight: 600; margin: 6px 2px -4px; display: flex; justify-content: space-between; align-items: baseline; }
+.sec-title small { font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.list { display: flex; flex-direction: column; }
+.item { display: flex; justify-content: space-between; gap: 12px; padding: 12px 2px; }
+.item + .item { border-top: 1px solid rgba(200, 208, 224, .7); }
+.item .a { font-weight: 600; font-size: 14px; }
+.item .b { font-size: 13px; color: var(--ink-2); }
+.badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; white-space: nowrap; align-self: flex-start; padding: 3px 0; }
+.badge i { width: 7px; height: 7px; border-radius: 50%; }
+.badge.ok { color: var(--ok); } .badge.ok i { background: var(--ok-pip); }
+.badge.warn { color: var(--warn); } .badge.warn i { background: var(--warn-pip); }
+.badge.err { color: var(--err); } .badge.err i { background: var(--err-pip); }
+.badge.nil { color: var(--ink-2); } .badge.nil i { background: #94A3B8; }
+.empty { text-align: center; color: var(--ink-2); font-size: 14px; padding: 22px 8px; }
+
+/* Approval cards */
+.ap { display: flex; flex-direction: column; gap: 12px; }
+.ap-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.ap-head .n { font-weight: 600; font-size: 16px; }
+.ap-head .s { font-size: 13px; color: var(--ink-2); }
+.ap-body { border-radius: 16px; box-shadow: var(--well-sm); padding: 12px; display: grid; grid-template-columns: 92px 1fr; gap: 12px; }
+.ap-photo { width: 92px; aspect-ratio: 3/4; border-radius: 12px; overflow: hidden; background: #DDE2EC; display: grid; place-items: center; }
+.ap-photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ap-photo button { font-size: 12px; font-weight: 600; color: var(--brand); padding: 8px; text-align: center; width: 100%; height: 100%; }
+.kv { display: grid; gap: 5px; font-size: 13px; align-content: start; }
+.kv b { font-weight: 600; }
+.why { font-size: 13px; color: var(--warn); font-weight: 500; }
+.note { font-size: 13px; color: var(--ink-2); border-left: 2px solid var(--lo); padding-left: 8px; }
+.sel { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--ink-2); }
+.sel input { width: 20px; height: 20px; accent-color: var(--brand); }
+.batch { position: sticky; top: 8px; z-index: 5; display: flex; align-items: center; gap: 12px; justify-content: space-between; }
+
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.stat { border-radius: 18px; box-shadow: var(--raise-sm); padding: 12px 6px; text-align: center; }
+.stat .v { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.stat .k { font-size: 11px; color: var(--ink-2); font-weight: 600; line-height: 14px; }
+
+/* Forms */
+label.f { display: grid; gap: 6px; font-size: 13px; font-weight: 600; }
+.input, select.input, textarea.input {
+  width: 100%; border: 0; border-radius: 16px; background: var(--bg); box-shadow: var(--well);
+  padding: 13px 16px; font-size: 16px; font-weight: 400; color: var(--ink);
+}
+textarea.input { resize: vertical; min-height: 76px; }
+.pin { letter-spacing: 0.4em; text-align: center; font-size: 22px; font-variant-numeric: tabular-nums; }
+.err-text { color: var(--err); font-size: 13px; font-weight: 500; }
+
+/* Bottom nav */
+.nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; max-width: 420px; margin: 0 auto;
+  background: var(--bg); box-shadow: 0 -6px 14px rgba(200, 208, 224, .6);
+  border-radius: 24px 24px 0 0; padding: 8px 14px calc(env(safe-area-inset-bottom, 0px) + 8px);
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+}
+.nav button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 4px; border-radius: 16px; font-size: 12px; font-weight: 600; color: var(--ink-2); position: relative; }
+.nav button svg { width: 22px; height: 22px; }
+.nav button[aria-current="page"] { color: var(--brand); box-shadow: var(--well-sm); }
+.nav .cnt { position: absolute; top: 4px; right: calc(50% - 22px); min-width: 18px; height: 18px; border-radius: 9px; background: var(--warn-pip); color: #3B1D00; font-size: 11px; line-height: 18px; padding: 0 5px; }
+
+/* Sheet / modal */
+.sheet-bg { position: fixed; inset: 0; z-index: 40; background: rgba(30, 41, 59, .35); display: flex; align-items: flex-end; justify-content: center; }
+.sheet {
+  width: 100%; max-width: 420px; max-height: 94vh; overflow-y: auto; background: var(--bg);
+  border-radius: 28px 28px 0 0; padding: 20px 18px calc(env(safe-area-inset-bottom, 0px) + 20px);
+  display: flex; flex-direction: column; gap: 14px;
+}
+.sheet h2 { margin: 0; font-size: 20px; line-height: 28px; font-weight: 600; letter-spacing: -0.01em; }
+.sheet .x { position: absolute; }
+.cam { position: relative; border-radius: 24px; overflow: hidden; aspect-ratio: 3/4; background: #1E293B; box-shadow: var(--well); }
+.cam video, .cam img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.cam video { transform: scaleX(-1); }
+.cam .msg { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; color: #E2E8F0; font-size: 14px; }
+.shutter { width: 74px; height: 74px; border-radius: 50%; margin: 0 auto; background: var(--bg); box-shadow: var(--raise); display: grid; place-items: center; }
+.shutter span { width: 54px; height: 54px; border-radius: 50%; background: var(--brand); box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--focus); }
+.shutter:active span { transform: scale(.94); }
+.summary { display: grid; gap: 6px; font-size: 14px; }
+.summary div { display: flex; justify-content: space-between; gap: 12px; }
+.summary span:first-child { color: var(--ink-2); }
+.summary span:last-child { font-weight: 600; text-align: right; }
+.alert { border-radius: 16px; padding: 12px 14px; font-size: 14px; box-shadow: var(--well-sm); border-left: 3px solid var(--err-pip); }
+.alert.warn { border-left-color: var(--warn-pip); }
+
+/* Toast */
+.toast {
+  position: fixed; top: calc(env(safe-area-inset-top, 0px) + 12px); left: 50%; transform: translateX(-50%);
+  z-index: 60; width: calc(100% - 32px); max-width: 388px; background: var(--bg); box-shadow: var(--raise);
+  border-radius: 18px; padding: 12px 16px; font-size: 14px; border-left: 3px solid var(--ok-pip);
+}
+.toast.warn { border-left-color: var(--warn-pip); }
+.toast.err { border-left-color: var(--err-pip); }
+.toast b { display: block; }
+
+.login { min-height: 82vh; justify-content: center; gap: 22px; }
+.login .logo { width: 180px; margin: 0 auto 4px; display: block; }
+.login h1 { text-align: center; font-size: 22px; margin: 0; font-weight: 600; letter-spacing: -0.01em; }
+
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<main id="vLogin" class="shell login hidden">
+  <img class="logo" src="icons/logo.png" alt="Allir">
+  <h1>Absensi karyawan</h1>
+  <div id="demoLogin" class="demo hidden">Mode demo: data hanya tersimpan sementara di perangkat ini. PIN untuk semua akun: 123456.</div>
+  <label class="f">Nama
+    <select id="loginId" class="input"><option value="">Memuat daftar…</option></select>
+  </label>
+  <label class="f">PIN
+    <input id="loginPin" class="input pin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6" placeholder="••••••">
+  </label>
+  <p id="loginErr" class="err-text hidden" role="alert"></p>
+  <button id="loginBtn" class="btn primary">Masuk</button>
+  <p class="small muted" style="text-align:center;margin:0">Lupa PIN? Hubungi Efrie.</p>
+</main>
+
+<!-- APP -->
+<div id="vApp" class="hidden">
+  <header class="shell" style="padding-bottom:0;min-height:0;gap:0">
+    <div class="top">
+      <div>
+        <img src="icons/logo.png" alt="Allir">
+        <div class="who" id="whoLine"></div>
+      </div>
+      <button class="avatar" id="btnProfile" aria-label="Profil dan antrean">
+        <span id="initials"></span><span id="queueDot" class="dot hidden"></span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Tab Absen -->
+  <main id="tAbsen" class="shell" style="padding-top:12px">
+    <div id="demoBar" class="demo hidden">Mode demo. Isi API_URL di index.html agar data masuk ke Google Sheets.</div>
+    <div id="queueBar" class="alert warn hidden"></div>
+
+    <section class="clock" aria-live="off">
+      <div class="t" id="clockT">--.--.--</div>
+      <div class="d" id="clockD"></div>
+      <div class="src" id="clockSrc"></div>
+    </section>
+
+    <section class="well today" aria-live="polite">
+      <div class="lbl">Status hari ini</div>
+      <div class="val" id="todayVal">Memuat…</div>
+      <div class="sub" id="todaySub"></div>
+    </section>
+
+    <div class="seg" role="group" aria-label="Jenis kehadiran">
+      <button id="jKantor" aria-pressed="true">Kantor</button>
+      <button id="jLapangan" aria-pressed="false">Lapangan</button>
+    </div>
+
+    <div class="chips">
+      <span class="chip" id="chipGps"><i></i><span>GPS…</span></span>
+      <span class="chip" id="chipCam"><i></i><span>Kamera…</span></span>
+    </div>
+    <p class="hint" id="jenisHint"></p>
+
+    <button class="btn primary" id="btnIn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
+      Clock-in
+    </button>
+    <button class="btn" id="btnOut">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Clock-out
+    </button>
+
+    <h2 class="sec-title">Riwayat saya <small>20 terakhir</small></h2>
+    <section class="card" style="padding:6px 16px"><div class="list" id="history"></div></section>
+  </main>
+
+  <!-- Tab Persetujuan -->
+  <main id="tApprove" class="shell hidden" style="padding-top:12px">
+    <div class="seg three" role="group" aria-label="Filter status">
+      <button data-st="Menunggu" aria-pressed="true">Menunggu</button>
+      <button data-st="Disetujui" aria-pressed="false">Disetujui</button>
+      <button data-st="Ditolak" aria-pressed="false">Ditolak</button>
+    </div>
+    <p id="roleNote" class="small muted hidden" style="margin:0">Hanya Super Admin yang dapat menyetujui atau menolak.</p>
+    <div id="batchBar" class="card batch hidden">
+      <label class="sel"><input type="checkbox" id="selAll"> Pilih semua</label>
+      <button class="btn primary sm" id="btnBatch" style="width:auto;padding:0 18px">Setujui terpilih</button>
+    </div>
+    <div id="apList" class="ap" style="gap:18px"></div>
+  </main>
+
+  <!-- Tab Hari ini -->
+  <main id="tToday" class="shell hidden" style="padding-top:12px">
+    <div class="stats" id="stats"></div>
+    <button class="btn sm" id="btnManual">Input manual</button>
+    <h2 class="sec-title">Karyawan <small id="todayDate"></small></h2>
+    <section class="card" style="padding:6px 16px"><div class="list" id="todayList"></div></section>
+  </main>
+
+  <nav class="nav hidden" id="nav" aria-label="Menu admin">
+    <button data-tab="tAbsen" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg>Absen</button>
+    <button data-tab="tApprove">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg>Persetujuan<span class="cnt hidden" id="navCnt"></span></button>
+    <button data-tab="tToday">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.7 3 2.4 3.5 5.2"/></svg>Hari ini</button>
+  </nav>
+</div>
+
+<div id="sheetRoot"></div>
+<div id="toastRoot" aria-live="assertive"></div>
+<input type="file" id="fileCam" accept="image/*" capture="user" class="hidden">
+
+<script>
+(() => {
+'use strict';
+
+/* ───────── Utilitas ───────── */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const DEMO = !API_URL;
+const TZ = 'Asia/Jakarta';
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : 'r' + Date.now().toString(36) + Math.random().toString(36).slice(2, 10));
+const pad = n => String(n).padStart(2, '0');
+const partsWIB = d => Object.fromEntries(new Intl.DateTimeFormat('en-GB', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23' }).formatToParts(d).map(p => [p.type, p.value]));
+const hm = iso => { if (!iso) return '-'; const p = partsWIB(new Date(iso)); return `${p.hour}.${p.minute}`; };
+const dmy = iso => { const p = partsWIB(typeof iso === 'string' && iso.length === 10 ? new Date(iso + 'T12:00:00+07:00') : new Date(iso)); return `${p.day}/${p.month}/${p.year}`; };
+const dayKey = d => { const p = partsWIB(d); return `${p.year}-${p.month}-${p.day}`; };
+const longDate = d => new Intl.DateTimeFormat('id-ID', { timeZone: TZ, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(d);
+const distM = (a, b, c, d) => { const R = 6371000, r = Math.PI / 180, x = (c - a) * r, y = (d - b) * r; const h = Math.sin(x / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin(y / 2) ** 2; return 2 * R * Math.asin(Math.sqrt(h)); };
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('allir_' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('allir_' + k, JSON.stringify(v)); return true; } catch { return false; } },
+  del(k) { try { localStorage.removeItem('allir_' + k); } catch {} }
+};
+
+const S = {
+  token: store.get('token', null), user: store.get('user', null),
+  status: null, offset: null, jenis: 'Kantor', gps: { state: 'idle' }, camPerm: 'unknown',
+  tab: 'tAbsen', apStatus: 'Menunggu', apItems: [], selected: new Set(), flushing: false
+};
+
+/* ───────── API ───────── */
+class NetErr extends Error {}
+async function api(action, payload = {}) {
+  if (DEMO) return Demo.call(action, payload, S.token);
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 30000);
+  let res;
+  try {
+    res = await fetch(API_URL, {
+      method: 'POST', redirect: 'follow', signal: ctrl.signal,
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action, payload, token: S.token })
+    });
+  } catch (e) { throw new NetErr('Tidak ada koneksi ke server.'); }
+  finally { clearTimeout(timer); }
+  let j;
+  try { j = await res.json(); } catch { throw new NetErr('Balasan server tidak terbaca.'); }
+  if (!j.ok && j.code === 'AUTH') { logout(true); }
+  return j;
+}
+
+/* ───────── Toast & sheet ───────── */
+function toast(title, body = '', kind = 'ok', ms = 4200) {
+  const el = document.createElement('div');
+  el.className = 'toast ' + kind; el.setAttribute('role', 'status');
+  el.innerHTML = `<b>${esc(title)}</b>${body ? `<span class="small muted">${esc(body)}</span>` : ''}`;
+  $('#toastRoot').replaceChildren(el);
+  setTimeout(() => el.remove(), ms);
+}
+function openSheet(html, onClose) {
+  const bg = document.createElement('div');
+  bg.className = 'sheet-bg';
+  bg.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
+  bg.addEventListener('click', e => { if (e.target === bg) close(); });
+  const close = () => { bg.remove(); onClose && onClose(); };
+  $('#sheetRoot').appendChild(bg);
+  const f = bg.querySelector('[autofocus]'); f && f.focus();
+  return { el: bg.firstElementChild, close };
+}
+function confirmSheet(title, body, okLabel, danger) {
+  return new Promise(res => {
+    const s = openSheet(`<h2>${esc(title)}</h2><div class="small" style="font-size:14px">${body}</div>
+      <div class="row2"><button class="btn sm" data-x>Batal</button><button class="btn sm ${danger ? 'danger' : 'primary'}" data-ok>${esc(okLabel)}</button></div>`, () => res(false));
+    s.el.querySelector('[data-x]').onclick = () => { s.close(); };
+    s.el.querySelector('[data-ok]').onclick = () => { res(true); s.el.parentElement.remove(); };
+  });
+}
+function busy(btn, on, label) {
+  if (on) { btn.dataset.html = btn.innerHTML; btn.disabled = true; btn.innerHTML = `<span class="spin"></span>${esc(label || 'Memproses…')}`; }
+  else { btn.disabled = false; if (btn.dataset.html) btn.innerHTML = btn.dataset.html; }
+}
+
+/* ───────── Login ───────── */
+async function showLogin() {
+  $('#vApp').classList.add('hidden'); $('#vLogin').classList.remove('hidden');
+  $('#demoLogin').classList.toggle('hidden', !DEMO);
+  const sel = $('#loginId');
+  const cached = store.get('employees', null);
+  const fill = list => { sel.innerHTML = '<option value="">Pilih nama</option>' + list.map(e => `<option value="${esc(e.id)}">${esc(e.nama)} (${esc(e.jabatan)})</option>`).join(''); };
+  if (cached) fill(cached);
+  try {
+    const r = await api('employees');
+    if (r.ok) { store.set('employees', r.data); fill(r.data); }
+  } catch { if (!cached) sel.innerHTML = '<option value="">Tidak ada koneksi. Coba lagi.</option>'; }
+}
+$('#loginBtn').onclick = async () => {
+  const id = $('#loginId').value, pin = $('#loginPin').value.trim(), err = $('#loginErr');
+  err.classList.add('hidden');
+  if (!id) { err.textContent = 'Pilih nama Anda.'; err.classList.remove('hidden'); return; }
+  if (!/^\d{6}$/.test(pin)) { err.textContent = 'PIN terdiri dari 6 angka.'; err.classList.remove('hidden'); return; }
+  const b = $('#loginBtn'); busy(b, true, 'Memeriksa…');
+  try {
+    const r = await api('login', { id, pin });
+    if (!r.ok) { err.textContent = r.msg; err.classList.remove('hidden'); return; }
+    S.token = r.data.token; S.user = r.data.user;
+    store.set('token', S.token); store.set('user', S.user);
+    $('#loginPin').value = '';
+    startApp();
+  } catch (e) { err.textContent = 'Tidak ada koneksi. Periksa internet lalu coba lagi.'; err.classList.remove('hidden'); }
+  finally { busy(b, false); }
+};
+$('#loginPin').addEventListener('keydown', e => { if (e.key === 'Enter') $('#loginBtn').click(); });
+
+function logout(expired) {
+  S.token = null; S.user = null; store.del('token'); store.del('user');
+  if (expired) toast('Sesi berakhir', 'Silakan masuk lagi dengan PIN.', 'warn');
+  showLogin();
+}
+
+/* ───────── App utama ───────── */
+function startApp() {
+  $('#vLogin').classList.add('hidden'); $('#vApp').classList.remove('hidden');
+  $('#demoBar').classList.toggle('hidden', !DEMO);
+  const u = S.user;
+  $('#whoLine').textContent = `${u.nama}, ${u.jabatan}`;
+  $('#initials').textContent = u.nama.split(/\s+/).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+  const admin = u.role === 'admin' || u.role === 'superadmin';
+  $('#nav').classList.toggle('hidden', !admin);
+  $('#roleNote').classList.toggle('hidden', u.role === 'superadmin');
+  setJenis(S.jenis);
+  checkCamPerm();
+  refreshStatus();
+  flushQueue();
+  if (admin) refreshPendingCount();
+}
+
+async function refreshStatus() {
+  try {
+    const r = await api('status');
+    if (!r.ok) { if (r.code !== 'AUTH') toast('Gagal memuat status', r.msg, 'err'); return; }
+    S.status = r.data;
+    S.offset = new Date(r.data.waktuServer).getTime() - Date.now();
+    store.set('status', S.status);
+  } catch {
+    S.status = S.status || store.get('status', null);
+  }
+  renderHome();
+  if (S.jenis === 'Kantor') locate();
+}
+
+function queue() { return store.get('queue', []); }
+function todayEvents() {
+  const key = dayKey(new Date(Date.now() + (S.offset || 0)));
+  const fromServer = (S.status && S.status.tanggal === key) ? S.status.hariIni : [];
+  const pending = queue().filter(q => dayKey(new Date(q.payload.waktuPerangkat)) === key)
+    .map(q => ({ aksi: q.payload.aksi === 'in' ? 'Clock-in' : 'Clock-out', waktu: new Date(q.payload.waktuPerangkat).toISOString(), status: 'Belum terkirim', jenis: q.payload.jenis, lokal: true }));
+  return [...fromServer, ...pending];
+}
+
+function renderHome() {
+  const ev = todayEvents();
+  const masuk = ev.find(e => e.aksi === 'Clock-in');
+  const pulang = ev.find(e => e.aksi === 'Clock-out');
+  let val, sub = '';
+  if (!masuk) { val = 'Belum Clock-in'; sub = S.status ? `Jam mulai ${S.status.aturan.jamMulai}, toleransi ${S.status.aturan.toleransiMenit} menit` : ''; }
+  else if (!pulang) { val = `Clock-in ${hm(masuk.waktu)}`; sub = statusText(masuk); }
+  else { val = `${hm(masuk.waktu)} sampai ${hm(pulang.waktu)}`; sub = 'Absensi hari ini lengkap. ' + statusText(pulang); }
+  $('#todayVal').textContent = val; $('#todaySub').textContent = sub;
+  $('#btnIn').disabled = !!masuk;
+  $('#btnOut').disabled = !masuk || !!pulang;
+
+  const q = queue();
+  $('#queueBar').classList.toggle('hidden', !q.length);
+  $('#queueDot').classList.toggle('hidden', !q.length);
+  if (q.length) $('#queueBar').innerHTML = `<b>${q.length} absen belum terkirim.</b> Tersimpan di HP ini dan akan dikirim otomatis saat ada internet. Jangan hapus data aplikasi.`;
+
+  const h = (S.status && S.status.riwayat) || [];
+  $('#history').innerHTML = h.length ? h.map(e => `
+    <div class="item"><div><div class="a">${esc(e.aksi)}, ${esc(e.jenis)}</div>
+      <div class="b tnum">${dmy(e.waktu)} pukul ${hm(e.waktu)}${e.statusWaktu && e.statusWaktu !== '-' ? ', ' + esc(e.statusWaktu.toLowerCase()) : ''}</div>
+      ${e.status === 'Ditolak' && e.alasanKeputusan ? `<div class="b" style="color:var(--err)">Alasan ditolak: ${esc(e.alasanKeputusan)}</div>` : ''}
+    </div>${badge(e.status)}</div>`).join('') : '<div class="empty">Belum ada catatan absen.</div>';
+}
+
+function statusText(e) {
+  if (e.lokal) return 'Belum terkirim ke server.';
+  if (e.status === 'Menunggu') return 'Menunggu persetujuan Efrie.';
+  if (e.status === 'Disetujui') return 'Disetujui.';
+  if (e.status === 'Ditolak') return 'Ditolak.';
+  return e.statusWaktu && e.statusWaktu !== '-' ? e.statusWaktu + '.' : 'Tercatat.';
+}
+function badge(st) {
+  const m = { 'Tidak perlu': ['ok', 'Tercatat'], 'Disetujui': ['ok', 'Disetujui'], 'Menunggu': ['warn', 'Menunggu'], 'Ditolak': ['err', 'Ditolak'], 'Belum terkirim': ['nil', 'Belum terkirim'] }[st] || ['nil', st || '-'];
+  return `<span class="badge ${m[0]}"><i></i>${esc(m[1])}</span>`;
+}
+
+/* Jam */
+function tick() {
+  const synced = S.offset !== null;
+  const now = new Date(Date.now() + (S.offset || 0));
+  const p = partsWIB(now);
+  $('#clockT').textContent = `${p.hour}.${p.minute}.${p.second}`;
+  $('#clockD').textContent = longDate(now);
+  const src = $('#clockSrc');
+  src.textContent = synced ? 'Waktu server (WIB)' : 'Waktu HP, belum tersambung ke server';
+  src.classList.toggle('warn', !synced);
+}
+setInterval(tick, 1000); tick();
+
+/* Jenis */
+function setJenis(j) {
+  S.jenis = j;
+  $('#jKantor').setAttribute('aria-pressed', j === 'Kantor');
+  $('#jLapangan').setAttribute('aria-pressed', j === 'Lapangan');
+  $('#jenisHint').textContent = j === 'Kantor'
+    ? 'Absen kantor wajib GPS dan berada dalam radius kantor.'
+    : 'Absen lapangan perlu persetujuan Efrie. GPS dicatat jika tersedia.';
+  if (j === 'Kantor' || S.gps.state === 'idle') locate();
+  renderChips();
+}
+$('#jKantor').onclick = () => setJenis('Kantor');
+$('#jLapangan').onclick = () => setJenis('Lapangan');
+
+/* GPS */
+function getPosition(maxAge = 15000) {
+  return new Promise(res => {
+    if (!navigator.geolocation) return res({ state: 'err', msg: 'Perangkat tidak mendukung GPS' });
+    navigator.geolocation.getCurrentPosition(
+      p => res({ state: 'ok', lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy, at: Date.now() }),
+      e => res({ state: 'err', msg: e.code === 1 ? 'Izin lokasi ditolak' : e.code === 3 ? 'GPS terlalu lama merespons' : 'Lokasi tidak tersedia' }),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: maxAge }
+    );
+  });
+}
+async function locate() {
+  if (S.gps.state === 'busy') return;
+  S.gps = { state: 'busy' }; renderChips();
+  S.gps = await getPosition(); renderChips();
+}
+function officeDistance(g) {
+  if (!S.status || g.state !== 'ok') return null;
+  const a = S.status.aturan;
+  return Math.round(distM(g.lat, g.lng, a.kantorLat, a.kantorLng));
+}
+function renderChips() {
+  const g = S.gps, chip = $('#chipGps');
+  let cls = '', txt = 'GPS…';
+  if (g.state === 'busy') txt = 'Mencari lokasi…';
+  else if (g.state === 'ok') {
+    const d = officeDistance(g), r = S.status && S.status.aturan.radiusM;
+    if (d !== null && S.jenis === 'Kantor') { cls = d <= r ? 'ok' : 'warn'; txt = d <= r ? `Di area kantor (±${d} m)` : `${d} m dari kantor`; }
+    else { cls = 'ok'; txt = `GPS siap (akurasi ${Math.round(g.acc)} m)`; }
+  } else if (g.state === 'err') { cls = S.jenis === 'Kantor' ? 'err' : 'warn'; txt = g.msg; }
+  chip.className = 'chip ' + cls; chip.lastElementChild.textContent = txt;
+  const c = $('#chipCam');
+  const cm = { granted: ['ok', 'Kamera siap'], denied: ['err', 'Izin kamera ditolak'], prompt: ['', 'Kamera diminta saat absen'], unknown: ['', 'Kamera diminta saat absen'] }[S.camPerm];
+  c.className = 'chip ' + cm[0]; c.lastElementChild.textContent = cm[1];
+}
+async function checkCamPerm() {
+  try {
+    const p = await navigator.permissions.query({ name: 'camera' });
+    S.camPerm = p.state; p.onchange = () => { S.camPerm = p.state; renderChips(); };
+  } catch { S.camPerm = 'unknown'; }
+  renderChips();
+}
+$('#chipGps').onclick = locate;
+
+/* ───────── Alur Clock-in / Clock-out ───────── */
+$('#btnIn').onclick = () => openCapture('in');
+$('#btnOut').onclick = () => openCapture('out');
+
+function openCapture(aksi) {
+  const label = aksi === 'in' ? 'Clock-in' : 'Clock-out';
+  const jenis = S.jenis;
+  const st = { aksi, jenis, photo: null, takenAt: null, stream: null, gps: S.gps, requestId: uid(), pengecualian: false, sending: false };
+  const sh = openSheet(`
+    <h2>${label} ${jenis.toLowerCase()}</h2>
+    <div class="cam"><video playsinline muted autoplay></video><img class="hidden" alt="Pratinjau selfie"><div class="msg">Membuka kamera…</div></div>
+    <button class="shutter" data-shot aria-label="Ambil selfie"><span></span></button>
+    <button class="btn sm hidden" data-retake>Ulangi foto</button>
+    <button class="btn sm hidden" data-filecam>Ambil foto lewat aplikasi kamera</button>
+    <div class="summary" data-sum></div>
+    <div data-alert></div>
+    <label class="f ${jenis === 'Lapangan' ? '' : 'hidden'}" data-notewrap>
+      <span data-notelabel>${jenis === 'Lapangan' ? 'Lokasi dan keperluan (wajib)' : 'Alasan pengecualian (wajib)'}</span>
+      <textarea class="input" data-note maxlength="300" placeholder="${jenis === 'Lapangan' ? 'Contoh: pemasangan pompa di rumah pelanggan, Antapani' : 'Contoh: GPS HP tidak akurat di dalam gudang'}"></textarea>
+    </label>
+    <button class="btn primary" data-send disabled>Kirim ${label}</button>
+    <button class="btn sm" data-cancel>Batal</button>`, () => stopCam());
+  const el = sh.el;
+  const video = el.querySelector('video'), img = el.querySelector('.cam img'), msg = el.querySelector('.cam .msg');
+
+  function stopCam() { if (st.stream) st.stream.getTracks().forEach(t => t.stop()); st.stream = null; }
+  async function startCam() {
+    img.classList.add('hidden'); video.classList.remove('hidden'); msg.classList.remove('hidden'); msg.textContent = 'Membuka kamera…';
+    el.querySelector('[data-shot]').classList.remove('hidden'); el.querySelector('[data-retake]').classList.add('hidden');
+    try {
+      st.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 720 }, height: { ideal: 960 } }, audio: false });
+      video.srcObject = st.stream; await video.play(); msg.classList.add('hidden');
+      S.camPerm = 'granted'; renderChips();
+    } catch (e) {
+      msg.innerHTML = e && e.name === 'NotAllowedError'
+        ? 'Izin kamera ditolak.<br>Buka Pengaturan HP → Aplikasi → Absen Allir → Izin → Kamera → Izinkan.'
+        : 'Kamera tidak bisa dibuka di aplikasi.<br>Gunakan tombol di bawah.';
+      el.querySelector('[data-shot]').classList.add('hidden');
+      el.querySelector('[data-filecam]').classList.remove('hidden');
+      if (e && e.name === 'NotAllowedError') { S.camPerm = 'denied'; renderChips(); }
+    }
+  }
+  function compress(source, w, h) {
+    const W = 540, H = Math.round(W * h / w);
+    const c = document.createElement('canvas'); c.width = W; c.height = H;
+    c.getContext('2d').drawImage(source, 0, 0, W, H);
+    return c.toDataURL('image/jpeg', 0.72);
+  }
+  function setPhoto(dataUrl) {
+    st.photo = dataUrl; st.takenAt = Date.now();
+    img.src = dataUrl; img.classList.remove('hidden'); video.classList.add('hidden'); msg.classList.add('hidden');
+    el.querySelector('[data-shot]').classList.add('hidden'); el.querySelector('[data-retake]').classList.remove('hidden');
+    stopCam(); refresh();
+  }
+  el.querySelector('[data-shot]').onclick = () => { if (video.videoWidth) setPhoto(compress(video, video.videoWidth, video.videoHeight)); };
+  el.querySelector('[data-retake]').onclick = () => { st.photo = null; refresh(); startCam(); };
+  el.querySelector('[data-filecam]').onclick = () => {
+    const fi = $('#fileCam'); fi.value = '';
+    fi.onchange = () => {
+      const f = fi.files[0]; if (!f) return;
+      const im = new Image(); im.onload = () => { setPhoto(compress(im, im.naturalWidth, im.naturalHeight)); URL.revokeObjectURL(im.src); };
+      im.src = URL.createObjectURL(f);
+    };
+    fi.click();
+  };
+  el.querySelector('[data-cancel]').onclick = () => sh.close();
+  el.querySelector('[data-note]').oninput = refresh;
+
+  function refresh() {
+    const g = st.gps, rows = [];
+    rows.push(['Selfie', st.photo ? 'Sudah diambil' : 'Belum']);
+    if (g.state === 'busy') rows.push(['Lokasi', 'Mencari…']);
+    else if (g.state === 'ok') {
+      const d = officeDistance(g);
+      rows.push(['Lokasi', `Akurasi ±${Math.round(g.acc)} m`]);
+      if (d !== null) rows.push(['Perkiraan jarak ke kantor', `${d} m (batas ${S.status.aturan.radiusM} m)`]);
+    } else rows.push(['Lokasi', g.msg || 'Tidak tersedia']);
+    if (jenis === 'Lapangan') rows.push(['Persetujuan', 'Perlu persetujuan Efrie']);
+    el.querySelector('[data-sum]').innerHTML = rows.map(r => `<div><span>${esc(r[0])}</span><span>${esc(r[1])}</span></div>`).join('');
+    const needNote = jenis === 'Lapangan' || st.pengecualian;
+    const note = el.querySelector('[data-note]').value.trim();
+    el.querySelector('[data-send]').disabled = st.sending || !st.photo || (needNote && !note) || (jenis === 'Kantor' && g.state === 'busy');
+  }
+  function showAlert(html, kind = '') { el.querySelector('[data-alert]').innerHTML = html ? `<div class="alert ${kind}">${html}</div>` : ''; }
+
+  el.querySelector('[data-send]').onclick = async () => {
+    const btn = el.querySelector('[data-send]');
+    const note = el.querySelector('[data-note]').value.trim();
+    const g = st.gps;
+    const payload = {
+      requestId: st.requestId, aksi, jenis, selfie: st.photo.split(',')[1], catatan: note,
+      lat: g.state === 'ok' ? g.lat : null, lng: g.state === 'ok' ? g.lng : null, akurasi: g.state === 'ok' ? g.acc : null,
+      pengecualian: st.pengecualian, offline: false, waktuPerangkat: st.takenAt
+    };
+    st.sending = true; busy(btn, true, 'Mengirim…'); showAlert('');
+    try {
+      const r = await api('clock', payload);
+      if (r.ok) {
+        sh.close();
+        const e = r.data.event;
+        if (e.status === 'Menunggu') toast(`${label} tersimpan pukul ${hm(e.waktu)}`, 'Menunggu persetujuan Efrie.', 'warn', 6000);
+        else toast(`${label} tercatat pukul ${hm(e.waktu)}`, e.statusWaktu && e.statusWaktu !== '-' ? e.statusWaktu : '');
+        refreshStatus(); refreshPendingCount();
+        return;
+      }
+      if ((r.code === 'OUT_OF_RADIUS' || r.code === 'GPS_REQUIRED') && jenis === 'Kantor') {
+        showAlert(`<b>${esc(r.msg)}</b><br>Coba buka Google Maps beberapa detik agar GPS lebih akurat, lalu ulangi. Jika tetap gagal, kirim sebagai pengecualian; absen akan menunggu persetujuan Efrie.
+          <div class="row2" style="margin-top:10px"><button class="btn sm" data-regps>Cek lokasi lagi</button><button class="btn sm" data-exc>Ajukan pengecualian</button></div>`);
+        el.querySelector('[data-regps]').onclick = async () => { st.gps = { state: 'busy' }; refresh(); st.gps = await getPosition(0); S.gps = st.gps; renderChips(); showAlert(''); refresh(); };
+        el.querySelector('[data-exc]').onclick = () => {
+          st.pengecualian = true; el.querySelector('[data-notewrap]').classList.remove('hidden');
+          showAlert('Pengecualian: tulis alasan, lalu kirim. Status akan <b>Menunggu</b> sampai Efrie memutuskan.', 'warn'); refresh();
+          el.querySelector('[data-note]').focus();
+        };
+      } else {
+        showAlert(esc(r.msg || 'Gagal menyimpan absen.'));
+      }
+    } catch (err) {
+      if (!(err instanceof NetErr)) { showAlert('Terjadi kesalahan di aplikasi. Coba lagi.'); return; }
+      if (jenis === 'Kantor' && g.state !== 'ok') { showAlert('Tidak ada internet dan GPS tidak tersedia. Absen kantor tidak bisa disimpan offline tanpa lokasi.'); return; }
+      payload.offline = true;
+      const q = queue(); q.push({ action: 'clock', payload, savedAt: Date.now() });
+      if (!store.set('queue', q)) { showAlert('Memori HP penuh, absen tidak bisa disimpan offline. Cari sinyal lalu kirim lagi.'); return; }
+      sh.close();
+      toast('Tersimpan di HP, belum terkirim', 'Akan dikirim otomatis saat ada internet. Absen offline perlu persetujuan Efrie.', 'warn', 7000);
+      renderHome();
+    } finally { st.sending = false; busy(btn, false); refresh(); }
+  };
+
+  refresh();
+  startCam();
+  if (jenis === 'Kantor' || S.gps.state !== 'ok' || Date.now() - (S.gps.at || 0) > 30000) {
+    st.gps = { state: 'busy' }; refresh();
+    getPosition(10000).then(g => { st.gps = g; S.gps = g; renderChips(); refresh(); });
+  }
+}
+
+/* Antrean offline */
+async function flushQueue() {
+  if (S.flushing || !S.token) return;
+  let q = queue(); if (!q.length) return;
+  S.flushing = true;
+  let sent = 0;
+  try {
+    while (q.length) {
+      const item = q[0];
+      let r;
+      try { r = await api(item.action, item.payload); } catch { break; }
+      if (!r.ok && (r.code === 'AUTH' || r.code === 'BUSY' || r.code === 'SERVER')) break;
+      q.shift(); store.set('queue', q);
+      if (r.ok) sent++;
+      else toast('Absen offline ditolak server', r.msg, 'err', 8000);
+    }
+  } finally { S.flushing = false; }
+  if (sent) { toast(`${sent} absen offline terkirim`, 'Menunggu persetujuan Efrie.', 'warn'); refreshStatus(); refreshPendingCount(); }
+  else renderHome();
+}
+window.addEventListener('online', flushQueue);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.token) { flushQueue(); refreshStatus(); } });
+
+/* Profil */
+$('#btnProfile').onclick = () => {
+  const u = S.user, q = queue();
+  const s = openSheet(`<h2>${esc(u.nama)}</h2>
+    <div class="summary"><div><span>ID</span><span>${esc(u.id)}</span></div><div><span>Jabatan</span><span>${esc(u.jabatan)}</span></div>
+    <div><span>Peran</span><span>${esc({ superadmin: 'Super Admin', admin: 'Admin', karyawan: 'Karyawan' }[u.role] || u.role)}</span></div>
+    <div><span>Belum terkirim</span><span>${q.length} absen</span></div></div>
+    ${q.length ? '<button class="btn sm" data-flush>Kirim sekarang</button>' : ''}
+    <button class="btn sm danger" data-out>Keluar</button><button class="btn sm" data-x>Tutup</button>`);
+  s.el.querySelector('[data-x]').onclick = s.close;
+  const f = s.el.querySelector('[data-flush]'); if (f) f.onclick = () => { s.close(); flushQueue(); };
+  s.el.querySelector('[data-out]').onclick = async () => {
+    if (queue().length && !(await confirmSheet('Masih ada absen belum terkirim', 'Jika keluar, absen yang belum terkirim tetap di HP dan dikirim setelah Anda masuk lagi.', 'Tetap keluar', true))) return;
+    $$('.sheet-bg').forEach(x => x.remove()); logout(false);
+  };
+};
+
+/* ───────── Admin: navigasi ───────── */
+$$('#nav button').forEach(b => b.onclick = () => showTab(b.dataset.tab));
+function showTab(t) {
+  S.tab = t;
+  ['tAbsen', 'tApprove', 'tToday'].forEach(id => $('#' + id).classList.toggle('hidden', id !== t));
+  $$('#nav button').forEach(b => b.dataset.tab === t ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+  if (t === 'tApprove') loadApprovals();
+  if (t === 'tToday') loadToday();
+  window.scrollTo(0, 0);
+}
+async function refreshPendingCount() {
+  if (!S.user || S.user.role === 'karyawan') return;
+  try {
+    const r = await api('approvals', { status: 'Menunggu' });
+    if (!r.ok) return;
+    const n = r.data.length, c = $('#navCnt');
+    c.textContent = n; c.classList.toggle('hidden', !n);
+  } catch {}
+}
+
+/* ───────── Admin: persetujuan ───────── */
+$$('#tApprove .seg button').forEach(b => b.onclick = () => {
+  S.apStatus = b.dataset.st;
+  $$('#tApprove .seg button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  loadApprovals();
+});
+async function loadApprovals() {
+  const list = $('#apList');
+  list.innerHTML = '<div class="empty">Memuat…</div>';
+  S.selected.clear();
+  try {
+    const r = await api('approvals', { status: S.apStatus });
+    if (!r.ok) { list.innerHTML = `<div class="empty">${esc(r.msg)}</div>`; return; }
+    S.apItems = r.data;
+    if (S.apStatus === 'Menunggu') { const c = $('#navCnt'); c.textContent = r.data.length; c.classList.toggle('hidden', !r.data.length); }
+    renderApprovals();
+  } catch { list.innerHTML = '<div class="empty">Tidak ada koneksi. Tarik ulang dengan membuka tab ini lagi.</div>'; }
+}
+function renderApprovals() {
+  const items = S.apItems, can = S.user.role === 'superadmin' && S.apStatus === 'Menunggu';
+  $('#batchBar').classList.toggle('hidden', !can || items.length < 2);
+  $('#selAll').checked = items.length > 0 && S.selected.size === items.length;
+  $('#btnBatch').textContent = S.selected.size ? `Setujui terpilih (${S.selected.size})` : 'Setujui terpilih';
+  $('#btnBatch').disabled = !S.selected.size;
+  if (!items.length) {
+    $('#apList').innerHTML = `<div class="empty">${S.apStatus === 'Menunggu' ? 'Tidak ada pengajuan yang menunggu.' : 'Belum ada data dalam 31 hari terakhir.'}</div>`;
+    return;
+  }
+  $('#apList').innerHTML = items.map(e => {
+    const gps = e.statusGps === 'Dalam radius' || e.statusGps === 'Luar radius'
+      ? `${esc(e.statusGps)}, ${esc(e.jarak)} m` : esc(e.statusGps || '-');
+    const maps = e.lat !== '' && e.lat != null ? ` <a href="https://maps.google.com/?q=${encodeURIComponent(e.lat + ',' + e.lng)}" target="_blank" rel="noopener" style="color:var(--brand);font-weight:600">Peta</a>` : '';
+    return `<article class="card ap" data-id="${esc(e.id)}">
+      <div class="ap-head"><div><div class="n">${esc(e.nama)}</div><div class="s">${esc(e.aksi)} ${esc(e.jenis.toLowerCase())}, mode ${esc(e.mode.toLowerCase())}</div></div>${badge(e.status)}</div>
+      <div class="ap-body">
+        <div class="ap-photo">${e.adaSelfie ? `<button data-photo>Lihat selfie</button>` : '<span class="small muted" style="padding:8px;text-align:center">Tanpa selfie</span>'}</div>
+        <div class="kv">
+          <div><b class="tnum">${dmy(e.waktu)}, ${hm(e.waktu)} WIB</b>${e.statusWaktu && e.statusWaktu !== '-' ? ` <span class="muted">(${esc(e.statusWaktu)})</span>` : ''}</div>
+          ${e.mode !== 'Online' ? `<div class="muted">Diterima server ${hm(e.waktuServer)}, ${dmy(e.waktuServer)}</div>` : ''}
+          <div>GPS: ${gps}${maps}</div>
+          <div class="why">${esc(e.alasanPersetujuan)}</div>
+          ${e.catatan ? `<div class="note">${esc(e.catatan)}</div>` : ''}
+          ${e.status !== 'Menunggu' && e.ditinjauOleh ? `<div class="muted">${esc(e.status)} oleh ${esc(e.ditinjauOleh)}${e.alasanKeputusan ? ': ' + esc(e.alasanKeputusan) : ''}</div>` : ''}
+        </div>
+      </div>
+      ${can ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+          <label class="sel"><input type="checkbox" data-pick ${S.selected.has(e.id) ? 'checked' : ''}> Pilih</label></div>
+        <div class="row2"><button class="btn sm danger" data-reject>Tolak</button><button class="btn sm primary" data-approve>Setujui</button></div>` : ''}
+    </article>`;
+  }).join('');
+}
+$('#apList').addEventListener('click', async ev => {
+  const card = ev.target.closest('article'); if (!card) return;
+  const id = card.dataset.id, item = S.apItems.find(x => x.id === id);
+  if (ev.target.closest('[data-photo]')) {
+    const b = ev.target.closest('[data-photo]'); b.textContent = 'Memuat…';
+    try {
+      const r = await api('selfie', { eventId: id });
+      if (r.ok) b.parentElement.innerHTML = `<img src="${r.data.dataUrl}" alt="Selfie ${esc(item.nama)}">`;
+      else b.textContent = r.msg;
+    } catch { b.textContent = 'Gagal memuat. Ketuk lagi.'; }
+  }
+  if (ev.target.closest('[data-approve]')) {
+    const b = ev.target.closest('[data-approve]');
+    busy(b, true, 'Menyimpan…');
+    await decide([id], 'Disetujui', '');
+  }
+  if (ev.target.closest('[data-reject]')) rejectSheet(item);
+});
+$('#apList').addEventListener('change', ev => {
+  if (!ev.target.matches('[data-pick]')) return;
+  const id = ev.target.closest('article').dataset.id;
+  ev.target.checked ? S.selected.add(id) : S.selected.delete(id);
+  $('#btnBatch').textContent = S.selected.size ? `Setujui terpilih (${S.selected.size})` : 'Setujui terpilih';
+  $('#btnBatch').disabled = !S.selected.size;
+  $('#selAll').checked = S.selected.size === S.apItems.length;
+});
+$('#selAll').onchange = e => { S.selected = new Set(e.target.checked ? S.apItems.map(x => x.id) : []); renderApprovals(); };
+$('#btnBatch').onclick = async () => {
+  const picked = S.apItems.filter(x => S.selected.has(x.id));
+  const body = `<p style="margin:0 0 8px">${picked.length} pengajuan akan disetujui:</p>` +
+    picked.map(x => `<div class="tnum">${esc(x.nama)}: ${esc(x.aksi)} ${esc(x.jenis.toLowerCase())}, ${dmy(x.waktu)} ${hm(x.waktu)}</div>`).join('') +
+    '<p class="muted" style="margin:8px 0 0">Pastikan bukti tiap pengajuan sudah diperiksa.</p>';
+  if (!(await confirmSheet('Setujui pengajuan terpilih?', body, `Setujui ${picked.length}`))) return;
+  const b = $('#btnBatch'); busy(b, true, 'Menyimpan…');
+  await decide([...S.selected], 'Disetujui', '');
+  busy(b, false);
+};
+function rejectSheet(item) {
+  const s = openSheet(`<h2>Tolak ${esc(item.aksi)} ${esc(item.nama)}?</h2>
+    <p class="small muted" style="margin:0">${dmy(item.waktu)} ${hm(item.waktu)} WIB. Alasan akan terlihat oleh karyawan.</p>
+    <label class="f">Alasan penolakan<textarea class="input" data-r maxlength="300" autofocus></textarea></label>
+    <p class="err-text hidden" data-e></p>
+    <div class="row2"><button class="btn sm" data-x>Batal</button><button class="btn sm danger" data-ok>Tolak</button></div>`);
+  s.el.querySelector('[data-x]').onclick = s.close;
+  s.el.querySelector('[data-ok]').onclick = async () => {
+    const r = s.el.querySelector('[data-r]').value.trim();
+    if (!r) { const e = s.el.querySelector('[data-e]'); e.textContent = 'Alasan penolakan wajib diisi.'; e.classList.remove('hidden'); return; }
+    busy(s.el.querySelector('[data-ok]'), true, 'Menyimpan…');
+    await decide([item.id], 'Ditolak', r);
+    s.close();
+  };
+}
+async function decide(ids, keputusan, alasan) {
+  try {
+    const r = await api('decide', { ids, keputusan, alasan });
+    if (!r.ok) { toast('Gagal menyimpan keputusan', r.msg, 'err'); }
+    else {
+      const n = r.data.updated.length, sk = r.data.skipped.length;
+      toast(`${n} pengajuan ${keputusan.toLowerCase()}`, sk ? `${sk} dilewati karena sudah diputuskan sebelumnya.` : '', keputusan === 'Ditolak' ? 'warn' : 'ok');
+    }
+  } catch { toast('Tidak ada koneksi', 'Keputusan belum tersimpan. Coba lagi.', 'err'); }
+  loadApprovals();
+}
+
+/* ───────── Admin: hari ini & input manual ───────── */
+async function loadToday() {
+  $('#todayList').innerHTML = '<div class="empty">Memuat…</div>';
+  try {
+    const r = await api('today');
+    if (!r.ok) { $('#todayList').innerHTML = `<div class="empty">${esc(r.msg)}</div>`; return; }
+    const d = r.data, h = d.hitung;
+    S.todayData = d;
+    $('#todayDate').textContent = dmy(d.tanggal);
+    $('#stats').innerHTML = [['Sudah masuk', h.sudahMasuk], ['Belum masuk', h.belumMasuk], ['Sudah pulang', h.sudahPulang], ['Menunggu', h.menunggu]]
+      .map(x => `<div class="stat"><div class="v">${x[1]}</div><div class="k">${x[0]}</div></div>`).join('');
+    $('#todayList').innerHTML = d.karyawan.map(k => `<div class="item"><div>
+        <div class="a">${esc(k.nama)}</div>
+        <div class="b tnum">${k.masuk ? `Masuk ${hm(k.masuk.waktu)} (${esc(k.masuk.jenis.toLowerCase())}${k.masuk.statusWaktu ? ', ' + esc(k.masuk.statusWaktu.toLowerCase()) : ''})` : 'Belum Clock-in'}${k.pulang ? `, pulang ${hm(k.pulang.waktu)}` : ''}</div>
+      </div>${k.masuk ? badge(k.pulang && k.pulang.status === 'Menunggu' ? 'Menunggu' : k.masuk.status) : '<span class="badge nil"><i></i>Belum</span>'}</div>`).join('');
+  } catch { $('#todayList').innerHTML = '<div class="empty">Tidak ada koneksi.</div>'; }
+}
+$('#btnManual').onclick = () => {
+  const emps = (S.todayData && S.todayData.karyawan) || store.get('employees', []).map(e => ({ id: e.id, nama: e.nama }));
+  const now = new Date(Date.now() + (S.offset || 0)), p = partsWIB(now);
+  const sup = S.user.role === 'superadmin';
+  const s = openSheet(`<h2>Input manual</h2>
+    <p class="small muted" style="margin:0">Untuk HP rusak atau lupa absen. ${sup ? 'Input Super Admin langsung berstatus disetujui dan tercatat di Audit.' : 'Input Admin menunggu persetujuan Efrie.'}</p>
+    <label class="f">Karyawan<select class="input" data-emp>${emps.map(e => `<option value="${esc(e.id)}">${esc(e.nama)}</option>`).join('')}</select></label>
+    <div class="row2">
+      <label class="f">Aksi<select class="input" data-aksi><option value="in">Clock-in</option><option value="out">Clock-out</option></select></label>
+      <label class="f">Jenis<select class="input" data-jenis><option>Kantor</option><option>Lapangan</option></select></label>
+    </div>
+    <div class="row2">
+      <label class="f">Tanggal<input class="input" type="date" data-tgl value="${p.year}-${p.month}-${p.day}" max="${p.year}-${p.month}-${p.day}"></label>
+      <label class="f">Jam<input class="input" type="time" data-jam value="${p.hour}:${p.minute}"></label>
+    </div>
+    <label class="f">Alasan (wajib)<textarea class="input" data-alasan maxlength="300" placeholder="Contoh: HP Asep mati total, hadir di kantor sejak 07.40"></textarea></label>
+    <p class="err-text hidden" data-e></p>
+    <div class="row2"><button class="btn sm" data-x>Batal</button><button class="btn sm primary" data-ok>Simpan</button></div>`);
+  const q = k => s.el.querySelector(k);
+  q('[data-x]').onclick = s.close;
+  const reqId = uid();
+  q('[data-ok]').onclick = async () => {
+    const payload = { requestId: reqId, idKaryawan: q('[data-emp]').value, aksi: q('[data-aksi]').value, jenis: q('[data-jenis]').value, tanggal: q('[data-tgl]').value, jam: q('[data-jam]').value, alasan: q('[data-alasan]').value.trim() };
+    const e = q('[data-e]'); e.classList.add('hidden');
+    if (!payload.alasan) { e.textContent = 'Alasan wajib diisi.'; e.classList.remove('hidden'); return; }
+    busy(q('[data-ok]'), true, 'Menyimpan…');
+    try {
+      const r = await api('manual', payload);
+      if (!r.ok) { e.textContent = r.msg; e.classList.remove('hidden'); return; }
+      s.close(); toast('Input manual tersimpan', r.data.event.status === 'Menunggu' ? 'Menunggu persetujuan Efrie.' : 'Tercatat di Log_Absen dan Audit.');
+      loadToday(); refreshPendingCount();
+    } catch { e.textContent = 'Tidak ada koneksi. Coba lagi.'; e.classList.remove('hidden'); }
+    finally { busy(q('[data-ok]'), false); }
+  };
+};
+
+/* ───────── Mode demo (tanpa server) ───────── */
+const Demo = (() => {
+  const emps = [
+    ['ALR-000', 'Efrie', 'Super Admin', 'superadmin'], ['ALR-001', 'Andika', 'Teknisi / Storeperson', 'karyawan'],
+    ['ALR-002', 'Asep', 'Warehouse', 'karyawan'], ['ALR-003', 'Angeu', 'Warehouse', 'karyawan'], ['ALR-004', 'Dhini', 'Admin', 'karyawan'],
+    ['ALR-005', 'Bilqis', 'Storeperson', 'karyawan'], ['ALR-006', 'Ofel', 'Storeperson', 'karyawan'], ['ALR-007', 'Mang Eman', 'Teknisi', 'karyawan'],
+    ['ALR-008', 'Ahmad', 'Teknisi', 'karyawan'], ['ALR-009', 'Fazry', 'Teknisi', 'karyawan']
+  ].map(e => ({ id: e[0], nama: e[1], jabatan: e[2], role: e[3] }));
+  const rules = { kantorLat: -6.9180447, kantorLng: 107.6065538, radiusM: 100, jamMulai: '07:45', toleransiMenit: 15 };
+  const log = store.get('demo_log', []), photos = {};
+  const save = () => store.set('demo_log', log);
+  const R = d => ({ ok: true, data: d }), F = (code, msg) => ({ ok: false, code, msg });
+  const userOf = t => emps.find(e => e.id === String(t || '').replace('demo-', ''));
+  const tStat = d => { const p = partsWIB(d), m = +p.hour * 60 + +p.minute, s = 7 * 60 + 45; return m <= s ? 'Tepat waktu' : m <= s + 15 ? 'Toleransi' : 'Terlambat'; };
+  const sameDay = (id, tgl) => log.filter(e => e.idKaryawan === id && e.tanggal === tgl && e.status !== 'Ditolak');
+  function session(id, tgl, aksi) {
+    const d = sameDay(id, tgl), i = d.find(e => e.aksi === 'Clock-in'), o = d.find(e => e.aksi === 'Clock-out');
+    if (aksi === 'Clock-in' && i) return F('DUPLICATE', `Sudah Clock-in pada tanggal ini pukul ${hm(i.waktu)}.`);
+    if (aksi === 'Clock-out' && !i) return F('NO_SESSION', 'Belum ada Clock-in pada tanggal ini.');
+    if (aksi === 'Clock-out' && o) return F('DUPLICATE', `Sudah Clock-out pukul ${hm(o.waktu)}.`);
+    return null;
+  }
+  async function call(action, p, token) {
+    await new Promise(r => setTimeout(r, 350));
+    if (action === 'employees') return R(emps.map(({ id, nama, jabatan }) => ({ id, nama, jabatan })));
+    if (action === 'login') { const u = emps.find(e => e.id === p.id); return u && p.pin === '123456' ? R({ token: 'demo-' + u.id, user: u }) : F('LOGIN', 'PIN salah. Di mode demo PIN-nya 123456.'); }
+    const u = userOf(token); if (!u) return F('AUTH', 'Sesi berakhir.');
+    const now = new Date(), today = dayKey(now);
+    if (action === 'status') {
+      const mine = log.filter(e => e.idKaryawan === u.id);
+      return R({ user: u, waktuServer: now.toISOString(), tanggal: today, aturan: rules, hariIni: mine.filter(e => e.tanggal === today && e.status !== 'Ditolak'), riwayat: mine.slice(-20).reverse() });
+    }
+    if (action === 'clock') {
+      const dup = log.find(e => e.requestId === p.requestId); if (dup) return R({ event: dup, duplikat: true });
+      const w = p.offline ? new Date(p.waktuPerangkat) : now, tgl = dayKey(w), aksi = p.aksi === 'in' ? 'Clock-in' : 'Clock-out';
+      const bad = session(u.id, tgl, aksi); if (bad) return bad;
+      const has = p.lat != null, jarak = has ? Math.round(distM(p.lat, p.lng, rules.kantorLat, rules.kantorLng)) : '';
+      const why = []; let sg;
+      if (p.jenis === 'Kantor') {
+        if (!has) { if (!p.pengecualian) return F('GPS_REQUIRED', 'Lokasi wajib untuk absen Kantor.'); sg = 'Gagal'; why.push('GPS kantor gagal'); }
+        else if (jarak > rules.radiusM) { if (!p.pengecualian) return F('OUT_OF_RADIUS', `Anda berada ±${jarak} m dari kantor (batas ${rules.radiusM} m).`); sg = 'Luar radius'; why.push(`Kantor di luar radius (${jarak} m)`); }
+        else sg = 'Dalam radius';
+      } else { sg = has ? 'Tercatat' : 'Tidak ada'; why.push('Absen lapangan'); }
+      if (p.offline) why.push('Terkirim offline, waktu dari HP');
+      const e = { id: 'EV-' + Date.now().toString(36).toUpperCase(), tanggal: tgl, idKaryawan: u.id, nama: u.nama, aksi, jenis: p.jenis, waktu: w.toISOString(), waktuServer: now.toISOString(), mode: p.offline ? 'Offline' : 'Online', lat: has ? p.lat : '', lng: has ? p.lng : '', jarak, statusGps: sg, statusWaktu: aksi === 'Clock-in' ? tStat(w) : '-', adaSelfie: true, catatan: p.catatan, alasanPersetujuan: why.join('; '), status: why.length ? 'Menunggu' : 'Tidak perlu', requestId: p.requestId };
+      photos[e.id] = 'data:image/jpeg;base64,' + p.selfie; log.push(e); save();
+      return R({ event: e, duplikat: false });
+    }
+    if (u.role === 'karyawan') return F('FORBIDDEN', 'Tidak ada akses.');
+    if (action === 'approvals') return R(log.filter(e => e.status === (p.status || 'Menunggu')).slice().reverse());
+    if (action === 'selfie') return photos[p.eventId] ? R({ dataUrl: photos[p.eventId] }) : F('NOT_FOUND', 'Selfie demo hilang setelah halaman dimuat ulang.');
+    if (action === 'decide') {
+      if (u.role !== 'superadmin') return F('FORBIDDEN', 'Hanya Super Admin.');
+      const up = [], sk = [];
+      p.ids.forEach(id => { const e = log.find(x => x.id === id); if (!e || e.status !== 'Menunggu') return sk.push(id); Object.assign(e, { status: p.keputusan, ditinjauOleh: u.nama, alasanKeputusan: p.alasan }); up.push(id); });
+      save(); return R({ updated: up, skipped: sk });
+    }
+    if (action === 'today') {
+      const list = emps.map(e => { const d = sameDay(e.id, today); return { id: e.id, nama: e.nama, jabatan: e.jabatan, masuk: d.find(x => x.aksi === 'Clock-in') || null, pulang: d.find(x => x.aksi === 'Clock-out') || null }; });
+      return R({ tanggal: today, karyawan: list, hitung: { total: list.length, sudahMasuk: list.filter(x => x.masuk).length, belumMasuk: list.filter(x => !x.masuk).length, sudahPulang: list.filter(x => x.pulang).length, menunggu: log.filter(x => x.status === 'Menunggu').length } });
+    }
+    if (action === 'manual') {
+      const emp = emps.find(e => e.id === p.idKaryawan), aksi = p.aksi === 'in' ? 'Clock-in' : 'Clock-out';
+      const w = new Date(`${p.tanggal}T${p.jam}:00+07:00`);
+      if (w > now) return F('BAD_TIME', 'Waktu tidak boleh di masa depan.');
+      const bad = session(emp.id, p.tanggal, aksi); if (bad) return bad;
+      const sup = u.role === 'superadmin';
+      const e = { id: 'EV-M' + Date.now().toString(36).toUpperCase(), tanggal: p.tanggal, idKaryawan: emp.id, nama: emp.nama, aksi, jenis: p.jenis, waktu: w.toISOString(), waktuServer: now.toISOString(), mode: 'Manual', lat: '', lng: '', jarak: '', statusGps: 'Tidak ada', statusWaktu: aksi === 'Clock-in' ? tStat(w) : '-', adaSelfie: false, catatan: p.alasan, alasanPersetujuan: 'Input manual oleh ' + u.nama, status: sup ? 'Disetujui' : 'Menunggu', ditinjauOleh: sup ? u.nama : '', alasanKeputusan: sup ? 'Input manual Super Admin' : '' };
+      log.push(e); save(); return R({ event: e, duplikat: false });
+    }
+    return F('UNKNOWN', 'Aksi tidak dikenal.');
+  }
+  return { call };
+})();
+
+/* ───────── Mulai ───────── */
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if (S.token && S.user) startApp(); else showLogin();
+})();
+</script>
+</body>
+</html>
